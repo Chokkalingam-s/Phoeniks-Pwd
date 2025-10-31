@@ -1,0 +1,156 @@
+body {
+  background-color: #f4f6fa;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+main {
+  min-height: 80vh;
+}
+
+.card {
+  border-radius: 10px;
+}
+
+.carousel-caption {
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+}
+
+.splash-fade-in {
+  animation: splashFadeIn 0.8s;
+  opacity: 1;
+}
+
+.splash-fade-out {
+  animation: splashFadeOut 0.5s forwards;
+  opacity: 0;
+}
+
+@keyframes splashFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes splashFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Responsive breakpoint adjustments (optional if using Bootstrap as well) */
+@media (max-width: 480px) {
+  .splash-screen h2 {
+    font-size: 1.13rem !important;
+  }
+}
+
+.phoeniks-navbar,
+.phoeniks-navbar h1,
+.phoeniks-navbar span {
+  font-family: 'Poppins', 'Inter', 'Nunito', Arial, sans-serif;
+}
+
+.text-orange {
+  color: #FF7A00 !important;
+}
+
+.utility-bar {
+  background: #111 !important;
+  color: #fff !important;
+  font-size: 14px;
+}
+
+.sectionnav {
+  background: #FF7A00 !important;
+  color: #fff !important;
+  box-shadow: 0 4px 12px -8px #FF7A00;
+}
+
+.sectionnav .nav-link {
+  color: #fff !important;
+  transition: background 0.2s, color 0.2s;
+  border-radius: 7px;
+}
+
+.sectionnav .nav-link:hover,
+.sectionnav .nav-link:focus {
+  background: #fff3e0 !important;
+  color: #FF7A00 !important;
+}
+
+/* Responsive styles */
+@media (max-width: 600px) {
+  .mainbar {
+    flex-direction: column;
+    align-items: flex-start !important;
+    padding: 10px 6px !important;
+  }
+  .mainbar img {
+    height: 36px !important;
+    width: 36px !important;
+    margin-right: 8px !important;
+  }
+  .sectionnav .nav-link {
+    min-width: 90px !important;
+    font-size: 0.8rem !important;
+    padding: 7px 4px !important;
+  }
+  .utility-bar {
+    flex-direction: column;
+    font-size: 13px !important;
+    padding: 6px 7px !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .sectionnav .nav-link {
+    min-width: 80px !important;
+    font-size: 0.8rem !important;
+  }
+}
+
+.voice-guide .guide-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 4000;
+  background: rgba(255,255,255,0.96);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Poppins', 'Inter', 'Nunito', Arial, sans-serif;
+}
+.guide-box {
+  background: #fff;
+  border-radius: 20px;
+  max-width: 340px;
+  min-width: 250px;
+  box-shadow: 0 4px 28px 0 #FF7A0040;
+  padding: 36px 24px 24px;
+  text-align: center;
+}
+.guide-box h2, .guide-box h3 {
+  font-weight: 700;
+}
+.guide-box button {
+  font-size: 1.1rem;
+  margin-top: 10px;
+}
+.loader {
+  width:40px;
+  height:40px;
+  border:4px solid #FF7A0030;
+  border-top:4px solid #FF7A00;
+  border-radius:50%;
+  margin:auto auto 18px auto;
+  animation: vguide-spin 1s linear infinite;
+}
+@keyframes vguide-spin {
+  to { transform: rotate(360deg) }
+}
+@media (max-width:500px){
+  .guide-box { max-width:94vw; padding:22px 4vw 18px;}
+}
+.carousel-img {
+  height: 500px; /* or the exact height of your second slide */
+  object-fit: cover;
+  width: 100%;
+}

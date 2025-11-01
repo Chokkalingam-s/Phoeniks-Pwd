@@ -1,17 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
-  User, 
   Briefcase, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Calendar,
-  Building2,
   MessageSquare,
   LogOut,
   X,
-  Navigation,
   AlertCircle,
   CheckCircle,
   UserX,
@@ -22,6 +15,8 @@ export default function OrganizationDashboard() {
   const navigate = useNavigate();
   const [selectedPerson, setSelectedPerson] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [map, setMap] = useState(null);
+  const [markers, setMarkers] = useState([]);
 
   const employee = {
     name: "Priya Sharma",
@@ -29,119 +24,291 @@ export default function OrganizationDashboard() {
     role: "Senior Coordinator",
   };
 
-  // Mock data for PWD individuals (replace with real API data)
+  // Google Maps API Key
+  const GOOGLE_MAPS_API_KEY = "AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg";
+
+  // Organization location (Chennai)
+  const orgLocation = {
+    lat: 13.0827,
+    lng: 80.2707,
+    name: "Phoenix Organization Center"
+  };
+
+  // Mock data for PWD individuals with real Chennai coordinates
   const pwdIndividuals = [
     {
       id: 1,
       name: "Rajesh Kumar",
-      lat: 13.0827,
-      lng: 80.2707,
-      status: "not-applied", // Red
+      lat: 13.0850,
+      lng: 80.2750,
+      status: "not-applied",
       disability: "Visual Impairment",
       phone: "+91-9876543210",
-      address: "12, Anna Salai, Chennai, Tamil Nadu",
+      address: "12, Anna Salai, Chennai",
       age: 28,
-      eligible: true
     },
     {
       id: 2,
       name: "Meena Devi",
-      lat: 13.0878,
-      lng: 80.2785,
-      status: "registered", // Yellow
+      lat: 13.0478,
+      lng: 80.2573,
+      status: "registered",
       disability: "Hearing Impairment",
       phone: "+91-9876543211",
-      address: "45, T Nagar, Chennai, Tamil Nadu",
+      address: "45, T Nagar, Chennai",
       age: 32,
-      registeredDate: "2025-10-15"
     },
     {
       id: 3,
       name: "Arjun Patel",
-      lat: 13.0850,
-      lng: 80.2750,
-      status: "active", // Green
+      lat: 13.0569,
+      lng: 80.2425,
+      status: "active",
       disability: "Locomotor Disability",
       phone: "+91-9876543212",
-      address: "78, Nungambakkam, Chennai, Tamil Nadu",
+      address: "78, Nungambakkam, Chennai",
       age: 25,
       organization: "Skills Training Center",
-      joinedDate: "2025-09-20",
-      coursesCompleted: 3
     },
     {
       id: 4,
       name: "Lakshmi Reddy",
-      lat: 13.0800,
-      lng: 80.2650,
+      lat: 13.0339,
+      lng: 80.2707,
       status: "not-applied",
       disability: "Intellectual Disability",
       phone: "+91-9876543213",
-      address: "23, Mylapore, Chennai, Tamil Nadu",
+      address: "23, Mylapore, Chennai",
       age: 22,
-      eligible: true
     },
     {
       id: 5,
       name: "Suresh Babu",
-      lat: 13.0900,
-      lng: 80.2800,
+      lat: 13.0067,
+      lng: 80.2206,
       status: "registered",
       disability: "Multiple Disabilities",
       phone: "+91-9876543214",
-      address: "90, Adyar, Chennai, Tamil Nadu",
+      address: "90, Adyar, Chennai",
       age: 35,
-      registeredDate: "2025-10-25"
     },
     {
       id: 6,
       name: "Priya Menon",
-      lat: 13.0820,
-      lng: 80.2720,
+      lat: 12.9716,
+      lng: 80.2180,
       status: "active",
       disability: "Visual Impairment",
       phone: "+91-9876543215",
-      address: "56, Velachery, Chennai, Tamil Nadu",
+      address: "56, Velachery, Chennai",
       age: 27,
       organization: "Digital Training Hub",
-      joinedDate: "2025-08-10",
-      coursesCompleted: 5
     },
     {
       id: 7,
       name: "Anil Sharma",
-      lat: 13.0780,
-      lng: 80.2680,
+      lat: 13.0010,
+      lng: 80.2565,
       status: "not-applied",
-      disability: "Speech and Hearing Disability",
+      disability: "Speech & Hearing Disability",
       phone: "+91-9876543216",
-      address: "34, Besant Nagar, Chennai, Tamil Nadu",
+      address: "34, Besant Nagar, Chennai",
       age: 30,
-      eligible: true
     },
     {
       id: 8,
       name: "Kavitha Rao",
-      lat: 13.0860,
-      lng: 80.2770,
+      lat: 13.0524,
+      lng: 80.2101,
       status: "active",
       disability: "Locomotor Disability",
       phone: "+91-9876543217",
-      address: "67, Kodambakkam, Chennai, Tamil Nadu",
+      address: "67, Kodambakkam, Chennai",
       age: 29,
       organization: "IT Skills Academy",
-      joinedDate: "2025-07-15",
-      coursesCompleted: 7
-    }
+    },
+    {
+      id: 9,
+      name: "Ramesh Iyer",
+      lat: 12.9935,
+      lng: 80.2462,
+      status: "registered",
+      disability: "Visual Impairment",
+      phone: "+91-9876543218",
+      address: "89, Perungudi, Chennai",
+      age: 26,
+    },
+    {
+      id: 10,
+      name: "Divya Nair",
+      lat: 13.0524,
+      lng: 80.2520,
+      status: "not-applied",
+      disability: "Hearing Impairment",
+      phone: "+91-9876543219",
+      address: "102, Vadapalani, Chennai",
+      age: 24,
+    },
   ];
 
-  // Current organization location (purple pin)
-  const orgLocation = {
-    lat: 13.0827,
-    lng: 80.2707,
-    name: "Phoenix Organization Center",
-    address: "123, Mount Road, Chennai"
+  // Load Google Maps Script
+  useEffect(() => {
+    const loadGoogleMapsScript = () => {
+      if (window.google) {
+        initializeMap();
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => initializeMap();
+      script.onerror = () => {
+        console.error("Failed to load Google Maps script");
+      };
+      document.head.appendChild(script);
+    };
+
+    loadGoogleMapsScript();
+  }, []);
+
+  // Initialize Google Map
+  const initializeMap = () => {
+    const mapElement = document.getElementById('google-map');
+    if (!mapElement || !window.google) return;
+
+    const mapInstance = new window.google.maps.Map(mapElement, {
+      center: orgLocation,
+      zoom: 12,
+      mapTypeControl: true,
+      streetViewControl: false,
+      fullscreenControl: true,
+      zoomControl: true,
+      styles: [
+        {
+          featureType: "poi",
+          elementType: "labels",
+          stylers: [{ visibility: "off" }]
+        }
+      ]
+    });
+
+    setMap(mapInstance);
+    addMarkers(mapInstance);
   };
+
+  // Create custom pin SVG
+  const createPinIcon = (color) => {
+    return {
+      path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
+      fillColor: color,
+      fillOpacity: 1,
+      strokeColor: "#ffffff",
+      strokeWeight: 2,
+      scale: 1.5,
+      anchor: new window.google.maps.Point(12, 22),
+    };
+  };
+
+  // Add markers to map
+  const addMarkers = (mapInstance) => {
+    const newMarkers = [];
+
+    // Add organization marker (Purple Pin)
+    const orgMarker = new window.google.maps.Marker({
+      position: orgLocation,
+      map: mapInstance,
+      title: orgLocation.name,
+      icon: createPinIcon('#8b5cf6'),
+      zIndex: 1000
+    });
+
+    const orgInfoWindow = new window.google.maps.InfoWindow({
+      content: `<div style="padding: 8px;">
+        <strong style="color: #8b5cf6;">📍 ${orgLocation.name}</strong>
+        <p style="margin: 4px 0 0; font-size: 12px; color: #626c71;">Your Location</p>
+      </div>`
+    });
+
+    orgMarker.addListener('click', () => {
+      orgInfoWindow.open(mapInstance, orgMarker);
+    });
+
+    newMarkers.push(orgMarker);
+
+    // Add PWD individual markers (Colored Pins)
+    pwdIndividuals.forEach((person) => {
+      let markerColor = '#626c71';
+      let statusLabel = 'Unknown';
+      
+      if (person.status === 'not-applied') {
+        markerColor = '#dc2626';
+        statusLabel = 'Not Applied';
+      } else if (person.status === 'registered') {
+        markerColor = '#eab308';
+        statusLabel = 'Needs Guidance';
+      } else if (person.status === 'active') {
+        markerColor = '#16a34a';
+        statusLabel = 'Active Learner';
+      }
+
+      const marker = new window.google.maps.Marker({
+        position: { lat: person.lat, lng: person.lng },
+        map: mapInstance,
+        title: person.name,
+        icon: createPinIcon(markerColor),
+        animation: window.google.maps.Animation.DROP,
+      });
+
+      const infoWindow = new window.google.maps.InfoWindow({
+        content: `<div style="padding: 8px; min-width: 200px;">
+          <strong style="color: ${markerColor};">${person.name}</strong>
+          <p style="margin: 4px 0; font-size: 12px; color: #626c71;">${statusLabel}</p>
+          <button 
+            onclick="document.dispatchEvent(new CustomEvent('openPersonModal', { detail: ${person.id} }))"
+            style="
+              margin-top: 8px;
+              padding: 6px 12px;
+              background: #21808d;
+              color: white;
+              border: none;
+              border-radius: 6px;
+              cursor: pointer;
+              font-size: 12px;
+              font-weight: 500;
+            "
+          >
+            View Details
+          </button>
+        </div>`
+      });
+
+      marker.addListener('click', () => {
+        infoWindow.open(mapInstance, marker);
+      });
+
+      newMarkers.push(marker);
+    });
+
+    setMarkers(newMarkers);
+  };
+
+  // Handle custom event from info window button
+  useEffect(() => {
+    const handleOpenModal = (event) => {
+      const personId = event.detail;
+      const person = pwdIndividuals.find(p => p.id === personId);
+      if (person) {
+        handlePinClick(person);
+      }
+    };
+
+    document.addEventListener('openPersonModal', handleOpenModal);
+    return () => {
+      document.removeEventListener('openPersonModal', handleOpenModal);
+    };
+  }, []);
 
   const handlePinClick = (person) => {
     setSelectedPerson(person);
@@ -159,29 +326,25 @@ export default function OrganizationDashboard() {
         return {
           label: "Not Applied for UDID",
           color: "#dc2626",
-          bgColor: "rgba(220, 38, 38, 0.1)",
           icon: <UserX size={16} />
         };
       case "registered":
         return {
           label: "UDID Registered - Needs Guidance",
           color: "#eab308",
-          bgColor: "rgba(234, 179, 8, 0.1)",
           icon: <AlertCircle size={16} />
         };
       case "active":
         return {
           label: "Active Learner",
           color: "#16a34a",
-          bgColor: "rgba(22, 163, 74, 0.1)",
           icon: <CheckCircle size={16} />
         };
       default:
         return {
           label: "Unknown",
           color: "#626c71",
-          bgColor: "rgba(98, 108, 113, 0.1)",
-          icon: <User size={16} />
+          icon: null
         };
     }
   };
@@ -199,7 +362,7 @@ export default function OrganizationDashboard() {
       <div style={styles.header}>
         <div style={styles.headerLeft}>
           <div style={styles.logoIcon}>
-            <Building2 size={24} />
+            <Briefcase size={24} />
           </div>
           <h1 style={styles.headerTitle}>Organization Dashboard</h1>
         </div>
@@ -276,84 +439,42 @@ export default function OrganizationDashboard() {
         {/* Map Section */}
         <div style={styles.mapCard}>
           <div style={styles.mapHeader}>
-            <h3 style={styles.mapTitle}>PWD Community Map</h3>
+            <h3 style={styles.mapTitle}>PWD Community Map - Chennai</h3>
             <p style={styles.mapSubtitle}>
-              Track and support PWD individuals in your area
+              Real-time tracking of PWD individuals in your area
             </p>
           </div>
 
           {/* Legend */}
           <div style={styles.legend}>
             <div style={styles.legendItem}>
-              <div style={{ ...styles.legendDot, backgroundColor: '#8b5cf6' }} />
-              <span style={styles.legendText}>Your Location</span>
+              <div style={{ ...styles.legendPin, backgroundColor: '#8b5cf6' }} />
+              <span style={styles.legendText}>Your Organization</span>
             </div>
             <div style={styles.legendItem}>
-              <div style={{ ...styles.legendDot, backgroundColor: '#dc2626' }} />
-              <span style={styles.legendText}>Not Applied (Eligible)</span>
+              <div style={{ ...styles.legendPin, backgroundColor: '#dc2626' }} />
+              <span style={styles.legendText}>Not Applied ({stats.notApplied})</span>
             </div>
             <div style={styles.legendItem}>
-              <div style={{ ...styles.legendDot, backgroundColor: '#eab308' }} />
-              <span style={styles.legendText}>Registered - Needs Help</span>
+              <div style={{ ...styles.legendPin, backgroundColor: '#eab308' }} />
+              <span style={styles.legendText}>Needs Guidance ({stats.registered})</span>
             </div>
             <div style={styles.legendItem}>
-              <div style={{ ...styles.legendDot, backgroundColor: '#16a34a' }} />
-              <span style={styles.legendText}>Active Learner</span>
+              <div style={{ ...styles.legendPin, backgroundColor: '#16a34a' }} />
+              <span style={styles.legendText}>Active Learners ({stats.active})</span>
             </div>
           </div>
 
-          {/* Map Container */}
-          <div style={styles.mapContainer}>
-            {/* Organization Location (Purple) */}
-            <div
-              style={{
-                ...styles.pin,
-                left: '50%',
-                top: '50%',
-                backgroundColor: '#8b5cf6',
-                width: '24px',
-                height: '24px',
-                cursor: 'default'
-              }}
-              title="Your Organization"
-            >
-              <Navigation size={16} color="#ffffff" />
-            </div>
-
-            {/* PWD Individuals */}
-            {pwdIndividuals.map((person, index) => {
-              const angle = (index / pwdIndividuals.length) * 2 * Math.PI;
-              const radius = 35; // Percentage from center
-              const left = 50 + radius * Math.cos(angle);
-              const top = 50 + radius * Math.sin(angle);
-
-              let pinColor = '#626c71';
-              if (person.status === 'not-applied') pinColor = '#dc2626';
-              else if (person.status === 'registered') pinColor = '#eab308';
-              else if (person.status === 'active') pinColor = '#16a34a';
-
-              return (
-                <div
-                  key={person.id}
-                  style={{
-                    ...styles.pin,
-                    left: `${left}%`,
-                    top: `${top}%`,
-                    backgroundColor: pinColor
-                  }}
-                  onClick={() => handlePinClick(person)}
-                  title={person.name}
-                >
-                  <MapPin size={16} color="#ffffff" />
-                </div>
-              );
-            })}
-          </div>
+          {/* Google Map Container */}
+          <div 
+            id="google-map" 
+            style={styles.mapContainer}
+          />
 
           {/* Map Instructions */}
           <div style={styles.mapInstructions}>
             <p style={styles.instructionText}>
-              💡 Click on any pin to view detailed information about the individual
+              💡 Click on any pin to view quick info, or click "View Details" for complete information
             </p>
           </div>
         </div>
@@ -376,9 +497,9 @@ export default function OrganizationDashboard() {
                 <div
                   style={{
                     ...styles.statusIndicator,
-                    backgroundColor: getStatusInfo(selectedPerson.status).bgColor,
+                    backgroundColor: `${getStatusInfo(selectedPerson.status).color}20`,
                     color: getStatusInfo(selectedPerson.status).color,
-                    border: `1px solid ${getStatusInfo(selectedPerson.status).color}30`
+                    border: `1px solid ${getStatusInfo(selectedPerson.status).color}40`
                   }}
                 >
                   {getStatusInfo(selectedPerson.status).icon}
@@ -386,118 +507,78 @@ export default function OrganizationDashboard() {
                 </div>
               </div>
 
-              {/* Personal Information */}
-              <div style={styles.modalSection}>
-                <div style={styles.modalRow}>
-                  <User size={18} color="#626c71" />
-                  <div style={styles.modalField}>
-                    <p style={styles.modalLabel}>Full Name</p>
-                    <p style={styles.modalValue}>{selectedPerson.name}</p>
-                  </div>
+              {/* Simple Key-Value Table */}
+              <div style={styles.detailsTable}>
+                <div style={styles.detailRow}>
+                  <span style={styles.detailKey}>Name:</span>
+                  <span style={styles.detailValue}>{selectedPerson.name}</span>
                 </div>
 
-                <div style={styles.modalRow}>
-                  <AlertCircle size={18} color="#626c71" />
-                  <div style={styles.modalField}>
-                    <p style={styles.modalLabel}>Disability Type</p>
-                    <p style={styles.modalValue}>{selectedPerson.disability}</p>
-                  </div>
+                <div style={styles.detailRow}>
+                  <span style={styles.detailKey}>Disability:</span>
+                  <span style={styles.detailValue}>{selectedPerson.disability}</span>
                 </div>
 
-                <div style={styles.modalRow}>
-                  <Calendar size={18} color="#626c71" />
-                  <div style={styles.modalField}>
-                    <p style={styles.modalLabel}>Age</p>
-                    <p style={styles.modalValue}>{selectedPerson.age} years</p>
-                  </div>
+                <div style={styles.detailRow}>
+                  <span style={styles.detailKey}>Age:</span>
+                  <span style={styles.detailValue}>{selectedPerson.age} years</span>
                 </div>
 
-                <div style={styles.modalRow}>
-                  <Phone size={18} color="#626c71" />
-                  <div style={styles.modalField}>
-                    <p style={styles.modalLabel}>Contact Number</p>
-                    <p style={styles.modalValue}>{selectedPerson.phone}</p>
-                  </div>
+                <div style={styles.detailRow}>
+                  <span style={styles.detailKey}>Phone:</span>
+                  <span style={styles.detailValue}>
+                    <a href={`tel:${selectedPerson.phone}`} style={styles.phoneLink}>
+                      {selectedPerson.phone}
+                    </a>
+                  </span>
                 </div>
 
-                <div style={styles.modalRow}>
-                  <MapPin size={18} color="#626c71" />
-                  <div style={styles.modalField}>
-                    <p style={styles.modalLabel}>Address</p>
-                    <p style={styles.modalValue}>{selectedPerson.address}</p>
-                  </div>
+                <div style={styles.detailRow}>
+                  <span style={styles.detailKey}>Address:</span>
+                  <span style={styles.detailValue}>{selectedPerson.address}</span>
                 </div>
+
+                {selectedPerson.organization && (
+                  <div style={styles.detailRow}>
+                    <span style={styles.detailKey}>Organization:</span>
+                    <span style={styles.detailValue}>{selectedPerson.organization}</span>
+                  </div>
+                )}
               </div>
 
-              {/* Status-Specific Information */}
-              {selectedPerson.status === "not-applied" && (
-                <div style={styles.actionSection}>
-                  <div style={styles.actionCard}>
-                    <h4 style={styles.actionTitle}>📋 Action Required</h4>
-                    <p style={styles.actionText}>
-                      This individual is eligible but hasn't applied for UDID yet.
-                    </p>
-                    <div style={styles.actionButtons}>
-                      <button style={styles.actionButton}>
-                        <Mail size={16} />
-                        <span>Send Information</span>
-                      </button>
-                      <button style={styles.secondaryButton}>
-                        <Phone size={16} />
-                        <span>Schedule Call</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {selectedPerson.status === "registered" && (
-                <div style={styles.actionSection}>
-                  <div style={styles.actionCard}>
-                    <h4 style={styles.actionTitle}>⚠️ Needs Guidance</h4>
-                    <p style={styles.actionText}>
-                      UDID registered on <strong>{selectedPerson.registeredDate}</strong>.
-                      They need help understanding available opportunities.
-                    </p>
-                    <div style={styles.actionButtons}>
-                      <button style={styles.actionButton}>
-                        <MessageSquare size={16} />
-                        <span>Provide Guidance</span>
-                      </button>
-                      <button style={styles.secondaryButton}>
-                        <Briefcase size={16} />
-                        <span>Show Opportunities</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {selectedPerson.status === "active" && (
-                <div style={styles.actionSection}>
-                  <div style={styles.successCard}>
-                    <h4 style={styles.successTitle}>✅ Active Learner</h4>
-                    <div style={styles.successStats}>
-                      <div style={styles.successStat}>
-                        <p style={styles.successLabel}>Organization</p>
-                        <p style={styles.successValue}>{selectedPerson.organization}</p>
-                      </div>
-                      <div style={styles.successStat}>
-                        <p style={styles.successLabel}>Joined</p>
-                        <p style={styles.successValue}>{selectedPerson.joinedDate}</p>
-                      </div>
-                      <div style={styles.successStat}>
-                        <p style={styles.successLabel}>Courses Completed</p>
-                        <p style={styles.successValue}>{selectedPerson.coursesCompleted}</p>
-                      </div>
-                    </div>
-                    <button style={styles.successButton}>
-                      <CheckCircle size={16} />
-                      <span>View Progress</span>
-                    </button>
-                  </div>
-                </div>
-              )}
+              {/* Action Buttons */}
+              <div style={styles.actionButtons}>
+                {selectedPerson.status === "not-applied" && (
+                  <button style={styles.primaryButton}>
+                    📧 Send UDID Information
+                  </button>
+                )}
+                
+                {selectedPerson.status === "registered" && (
+                  <button style={styles.primaryButton}>
+                    📚 Provide Guidance
+                  </button>
+                )}
+                
+                {selectedPerson.status === "active" && (
+                  <button style={styles.successButton}>
+                    ✅ View Progress
+                  </button>
+                )}
+                
+                <button 
+                  style={styles.secondaryButton}
+                  onClick={() => {
+                    if (map) {
+                      map.setCenter({ lat: selectedPerson.lat, lng: selectedPerson.lng });
+                      map.setZoom(15);
+                      closeModal();
+                    }
+                  }}
+                >
+                  📍 Show on Map
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -662,10 +743,12 @@ const styles = {
     alignItems: 'center',
     gap: '8px',
   },
-  legendDot: {
-    width: '16px',
+  legendPin: {
+    width: '12px',
     height: '16px',
-    borderRadius: '50%',
+    borderRadius: '50% 50% 50% 0',
+    transform: 'rotate(-45deg)',
+    border: '2px solid #ffffff',
   },
   legendText: {
     fontSize: '13px',
@@ -673,27 +756,10 @@ const styles = {
     fontWeight: '500',
   },
   mapContainer: {
-    position: 'relative',
     width: '100%',
-    height: '500px',
-    backgroundColor: 'rgba(33, 128, 141, 0.05)',
+    height: '600px',
     borderRadius: '12px',
     border: '2px solid rgba(33, 128, 141, 0.1)',
-    overflow: 'hidden',
-  },
-  pin: {
-    position: 'absolute',
-    width: '20px',
-    height: '20px',
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    transform: 'translate(-50%, -50%)',
-    transition: 'transform 0.2s ease',
-    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
-    border: '2px solid #ffffff',
   },
   mapInstructions: {
     marginTop: '16px',
@@ -722,9 +788,7 @@ const styles = {
   },
   modal: {
     width: '100%',
-    maxWidth: '600px',
-    maxHeight: '90vh',
-    overflowY: 'auto',
+    maxWidth: '500px',
     backgroundColor: '#ffffff',
     borderRadius: '16px',
     boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
@@ -769,61 +833,46 @@ const styles = {
     fontSize: '14px',
     fontWeight: '600',
   },
-  modalSection: {
+  detailsTable: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '16px',
+    gap: '12px',
     marginBottom: '24px',
   },
-  modalRow: {
+  detailRow: {
     display: 'flex',
-    gap: '12px',
+    justifyContent: 'space-between',
     alignItems: 'flex-start',
+    padding: '12px',
+    backgroundColor: 'rgba(94, 82, 64, 0.03)',
+    borderRadius: '6px',
   },
-  modalField: {
+  detailKey: {
+    fontSize: '14px',
+    fontWeight: '600',
+    color: '#626c71',
+    minWidth: '100px',
+  },
+  detailValue: {
+    fontSize: '14px',
+    fontWeight: '500',
+    color: '#13343b',
+    textAlign: 'right',
     flex: 1,
   },
-  modalLabel: {
-    fontSize: '12px',
-    color: '#626c71',
-    marginBottom: '4px',
-  },
-  modalValue: {
-    fontSize: '15px',
-    fontWeight: '600',
-    color: '#13343b',
-  },
-  actionSection: {
-    marginTop: '24px',
-  },
-  actionCard: {
-    padding: '20px',
-    backgroundColor: 'rgba(234, 179, 8, 0.05)',
-    border: '1px solid rgba(234, 179, 8, 0.2)',
-    borderRadius: '12px',
-  },
-  actionTitle: {
-    fontSize: '16px',
-    fontWeight: '600',
-    color: '#13343b',
-    marginBottom: '8px',
-  },
-  actionText: {
-    fontSize: '14px',
-    color: '#626c71',
-    marginBottom: '16px',
-    lineHeight: '1.6',
+  phoneLink: {
+    color: '#21808d',
+    textDecoration: 'none',
   },
   actionButtons: {
     display: 'flex',
     gap: '12px',
     flexWrap: 'wrap',
   },
-  actionButton: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '10px 16px',
+  primaryButton: {
+    flex: 1,
+    minWidth: '150px',
+    padding: '12px 16px',
     fontSize: '14px',
     fontWeight: '500',
     color: '#ffffff',
@@ -833,60 +882,10 @@ const styles = {
     cursor: 'pointer',
     transition: 'background-color 0.2s ease',
   },
-  secondaryButton: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '10px 16px',
-    fontSize: '14px',
-    fontWeight: '500',
-    color: '#21808d',
-    backgroundColor: 'rgba(33, 128, 141, 0.1)',
-    border: '1px solid rgba(33, 128, 141, 0.2)',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-  },
-  successCard: {
-    padding: '20px',
-    backgroundColor: 'rgba(22, 163, 74, 0.05)',
-    border: '1px solid rgba(22, 163, 74, 0.2)',
-    borderRadius: '12px',
-  },
-  successTitle: {
-    fontSize: '16px',
-    fontWeight: '600',
-    color: '#13343b',
-    marginBottom: '16px',
-  },
-  successStats: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-    gap: '16px',
-    marginBottom: '16px',
-  },
-  successStat: {
-    padding: '12px',
-    backgroundColor: '#ffffff',
-    borderRadius: '8px',
-    border: '1px solid rgba(94, 82, 64, 0.08)',
-  },
-  successLabel: {
-    fontSize: '11px',
-    color: '#626c71',
-    marginBottom: '4px',
-    textTransform: 'uppercase',
-  },
-  successValue: {
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#13343b',
-  },
   successButton: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '10px 16px',
+    flex: 1,
+    minWidth: '150px',
+    padding: '12px 16px',
     fontSize: '14px',
     fontWeight: '500',
     color: '#ffffff',
@@ -895,7 +894,18 @@ const styles = {
     borderRadius: '8px',
     cursor: 'pointer',
     transition: 'background-color 0.2s ease',
-    width: '100%',
-    justifyContent: 'center',
+  },
+  secondaryButton: {
+    flex: 1,
+    minWidth: '150px',
+    padding: '12px 16px',
+    fontSize: '14px',
+    fontWeight: '500',
+    color: '#21808d',
+    backgroundColor: 'rgba(33, 128, 141, 0.1)',
+    border: '1px solid rgba(33, 128, 141, 0.2)',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
   },
 };

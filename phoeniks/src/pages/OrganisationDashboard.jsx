@@ -8,13 +8,15 @@ import {
   AlertCircle,
   CheckCircle,
   UserX,
-  Users
+  Users,
+  Phone,
+  MapPin as MapPinIcon,
+  User as UserIcon
 } from "lucide-react";
 
 export default function OrganizationDashboard() {
   const navigate = useNavigate();
   const [selectedPerson, setSelectedPerson] = useState(null);
-  const [showModal, setShowModal] = useState(false);
   const [map, setMap] = useState(null);
   const [markers, setMarkers] = useState([]);
 
@@ -240,17 +242,13 @@ export default function OrganizationDashboard() {
     // Add PWD individual markers (Colored Pins)
     pwdIndividuals.forEach((person) => {
       let markerColor = '#626c71';
-      let statusLabel = 'Unknown';
       
       if (person.status === 'not-applied') {
         markerColor = '#dc2626';
-        statusLabel = 'Not Applied';
       } else if (person.status === 'registered') {
         markerColor = '#eab308';
-        statusLabel = 'Needs Guidance';
       } else if (person.status === 'active') {
         markerColor = '#16a34a';
-        statusLabel = 'Active Learner';
       }
 
       const marker = new window.google.maps.Marker({
@@ -261,31 +259,10 @@ export default function OrganizationDashboard() {
         animation: window.google.maps.Animation.DROP,
       });
 
-      const infoWindow = new window.google.maps.InfoWindow({
-        content: `<div style="padding: 8px; min-width: 200px;">
-          <strong style="color: ${markerColor};">${person.name}</strong>
-          <p style="margin: 4px 0; font-size: 12px; color: #626c71;">${statusLabel}</p>
-          <button 
-            onclick="document.dispatchEvent(new CustomEvent('openPersonModal', { detail: ${person.id} }))"
-            style="
-              margin-top: 8px;
-              padding: 6px 12px;
-              background: #21808d;
-              color: white;
-              border: none;
-              border-radius: 6px;
-              cursor: pointer;
-              font-size: 12px;
-              font-weight: 500;
-            "
-          >
-            View Details
-          </button>
-        </div>`
-      });
-
       marker.addListener('click', () => {
-        infoWindow.open(mapInstance, marker);
+        handlePinClick(person);
+        // Center map on clicked pin
+        mapInstance.panTo({ lat: person.lat, lng: person.lng });
       });
 
       newMarkers.push(marker);
@@ -294,29 +271,11 @@ export default function OrganizationDashboard() {
     setMarkers(newMarkers);
   };
 
-  // Handle custom event from info window button
-  useEffect(() => {
-    const handleOpenModal = (event) => {
-      const personId = event.detail;
-      const person = pwdIndividuals.find(p => p.id === personId);
-      if (person) {
-        handlePinClick(person);
-      }
-    };
-
-    document.addEventListener('openPersonModal', handleOpenModal);
-    return () => {
-      document.removeEventListener('openPersonModal', handleOpenModal);
-    };
-  }, []);
-
   const handlePinClick = (person) => {
     setSelectedPerson(person);
-    setShowModal(true);
   };
 
-  const closeModal = () => {
-    setShowModal(false);
+  const closePanel = () => {
     setSelectedPerson(null);
   };
 
@@ -326,24 +285,28 @@ export default function OrganizationDashboard() {
         return {
           label: "Not Applied for UDID",
           color: "#dc2626",
+          bgColor: "rgba(220, 38, 38, 0.1)",
           icon: <UserX size={16} />
         };
       case "registered":
         return {
           label: "UDID Registered - Needs Guidance",
           color: "#eab308",
+          bgColor: "rgba(234, 179, 8, 0.1)",
           icon: <AlertCircle size={16} />
         };
       case "active":
         return {
           label: "Active Learner",
           color: "#16a34a",
+          bgColor: "rgba(22, 163, 74, 0.1)",
           icon: <CheckCircle size={16} />
         };
       default:
         return {
           label: "Unknown",
           color: "#626c71",
+          bgColor: "rgba(98, 108, 113, 0.1)",
           icon: null
         };
     }
@@ -441,7 +404,7 @@ export default function OrganizationDashboard() {
           <div style={styles.mapHeader}>
             <h3 style={styles.mapTitle}>PWD Community Map - Chennai</h3>
             <p style={styles.mapSubtitle}>
-              Real-time tracking of PWD individuals in your area
+              Click on any pin to view individual details
             </p>
           </div>
 
@@ -465,124 +428,120 @@ export default function OrganizationDashboard() {
             </div>
           </div>
 
-          {/* Google Map Container */}
-          <div 
-            id="google-map" 
-            style={styles.mapContainer}
-          />
+          {/* Map Container with Info Panel */}
+          <div style={styles.mapWrapper}>
+            <div 
+              id="google-map" 
+              style={styles.mapContainer}
+            />
 
-          {/* Map Instructions */}
-          <div style={styles.mapInstructions}>
-            <p style={styles.instructionText}>
-              💡 Click on any pin to view quick info, or click "View Details" for complete information
-            </p>
+            {/* Info Panel (Slides in from right) */}
+            {selectedPerson && (
+              <div style={styles.infoPanel}>
+                <div style={styles.infoPanelHeader}>
+                  <h4 style={styles.infoPanelTitle}>Individual Details</h4>
+                  <button style={styles.closeButton} onClick={closePanel}>
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <div style={styles.infoPanelBody}>
+                  {/* Status Badge */}
+                  <div
+                    style={{
+                      ...styles.statusBadge,
+                      backgroundColor: getStatusInfo(selectedPerson.status).bgColor,
+                      color: getStatusInfo(selectedPerson.status).color,
+                      border: `1px solid ${getStatusInfo(selectedPerson.status).color}40`
+                    }}
+                  >
+                    {getStatusInfo(selectedPerson.status).icon}
+                    <span>{getStatusInfo(selectedPerson.status).label}</span>
+                  </div>
+
+                  {/* Details */}
+                  <div style={styles.detailsList}>
+                    <div style={styles.detailItem}>
+                      <UserIcon size={16} color="#626c71" />
+                      <div style={styles.detailContent}>
+                        <p style={styles.detailLabel}>Name</p>
+                        <p style={styles.detailValue}>{selectedPerson.name}</p>
+                      </div>
+                    </div>
+
+                    <div style={styles.detailItem}>
+                      <AlertCircle size={16} color="#626c71" />
+                      <div style={styles.detailContent}>
+                        <p style={styles.detailLabel}>Disability</p>
+                        <p style={styles.detailValue}>{selectedPerson.disability}</p>
+                      </div>
+                    </div>
+
+                    <div style={styles.detailItem}>
+                      <UserIcon size={16} color="#626c71" />
+                      <div style={styles.detailContent}>
+                        <p style={styles.detailLabel}>Age</p>
+                        <p style={styles.detailValue}>{selectedPerson.age} years</p>
+                      </div>
+                    </div>
+
+                    <div style={styles.detailItem}>
+                      <Phone size={16} color="#626c71" />
+                      <div style={styles.detailContent}>
+                        <p style={styles.detailLabel}>Phone</p>
+                        <p style={styles.detailValue}>
+                          <a href={`tel:${selectedPerson.phone}`} style={styles.phoneLink}>
+                            {selectedPerson.phone}
+                          </a>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div style={styles.detailItem}>
+                      <MapPinIcon size={16} color="#626c71" />
+                      <div style={styles.detailContent}>
+                        <p style={styles.detailLabel}>Address</p>
+                        <p style={styles.detailValue}>{selectedPerson.address}</p>
+                      </div>
+                    </div>
+
+                    {selectedPerson.organization && (
+                      <div style={styles.detailItem}>
+                        <Briefcase size={16} color="#626c71" />
+                        <div style={styles.detailContent}>
+                          <p style={styles.detailLabel}>Organization</p>
+                          <p style={styles.detailValue}>{selectedPerson.organization}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Button */}
+                  <div style={styles.actionSection}>
+                    {selectedPerson.status === "not-applied" && (
+                      <button style={styles.actionButton}>
+                        📧 Send UDID Info
+                      </button>
+                    )}
+                    
+                    {selectedPerson.status === "registered" && (
+                      <button style={styles.actionButton}>
+                        📚 Provide Guidance
+                      </button>
+                    )}
+                    
+                    {selectedPerson.status === "active" && (
+                      <button style={{ ...styles.actionButton, backgroundColor: '#16a34a' }}>
+                        ✅ View Progress
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
-
-      {/* Modal */}
-      {showModal && selectedPerson && (
-        <div style={styles.modalOverlay} onClick={closeModal}>
-          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div style={styles.modalHeader}>
-              <h3 style={styles.modalTitle}>PWD Individual Details</h3>
-              <button style={styles.closeButton} onClick={closeModal}>
-                <X size={20} />
-              </button>
-            </div>
-
-            <div style={styles.modalBody}>
-              {/* Status Badge */}
-              <div style={styles.statusBadge}>
-                <div
-                  style={{
-                    ...styles.statusIndicator,
-                    backgroundColor: `${getStatusInfo(selectedPerson.status).color}20`,
-                    color: getStatusInfo(selectedPerson.status).color,
-                    border: `1px solid ${getStatusInfo(selectedPerson.status).color}40`
-                  }}
-                >
-                  {getStatusInfo(selectedPerson.status).icon}
-                  <span>{getStatusInfo(selectedPerson.status).label}</span>
-                </div>
-              </div>
-
-              {/* Simple Key-Value Table */}
-              <div style={styles.detailsTable}>
-                <div style={styles.detailRow}>
-                  <span style={styles.detailKey}>Name:</span>
-                  <span style={styles.detailValue}>{selectedPerson.name}</span>
-                </div>
-
-                <div style={styles.detailRow}>
-                  <span style={styles.detailKey}>Disability:</span>
-                  <span style={styles.detailValue}>{selectedPerson.disability}</span>
-                </div>
-
-                <div style={styles.detailRow}>
-                  <span style={styles.detailKey}>Age:</span>
-                  <span style={styles.detailValue}>{selectedPerson.age} years</span>
-                </div>
-
-                <div style={styles.detailRow}>
-                  <span style={styles.detailKey}>Phone:</span>
-                  <span style={styles.detailValue}>
-                    <a href={`tel:${selectedPerson.phone}`} style={styles.phoneLink}>
-                      {selectedPerson.phone}
-                    </a>
-                  </span>
-                </div>
-
-                <div style={styles.detailRow}>
-                  <span style={styles.detailKey}>Address:</span>
-                  <span style={styles.detailValue}>{selectedPerson.address}</span>
-                </div>
-
-                {selectedPerson.organization && (
-                  <div style={styles.detailRow}>
-                    <span style={styles.detailKey}>Organization:</span>
-                    <span style={styles.detailValue}>{selectedPerson.organization}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div style={styles.actionButtons}>
-                {selectedPerson.status === "not-applied" && (
-                  <button style={styles.primaryButton}>
-                    📧 Send UDID Information
-                  </button>
-                )}
-                
-                {selectedPerson.status === "registered" && (
-                  <button style={styles.primaryButton}>
-                    📚 Provide Guidance
-                  </button>
-                )}
-                
-                {selectedPerson.status === "active" && (
-                  <button style={styles.successButton}>
-                    ✅ View Progress
-                  </button>
-                )}
-                
-                <button 
-                  style={styles.secondaryButton}
-                  onClick={() => {
-                    if (map) {
-                      map.setCenter({ lat: selectedPerson.lat, lng: selectedPerson.lng });
-                      map.setZoom(15);
-                      closeModal();
-                    }
-                  }}
-                >
-                  📍 Show on Map
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -755,123 +714,112 @@ const styles = {
     color: '#13343b',
     fontWeight: '500',
   },
-  mapContainer: {
+  mapWrapper: {
+    position: 'relative',
     width: '100%',
     height: '600px',
     borderRadius: '12px',
+    overflow: 'hidden',
     border: '2px solid rgba(33, 128, 141, 0.1)',
   },
-  mapInstructions: {
-    marginTop: '16px',
-    padding: '12px',
-    backgroundColor: 'rgba(33, 128, 141, 0.05)',
-    borderRadius: '8px',
-    textAlign: 'center',
-  },
-  instructionText: {
-    fontSize: '13px',
-    color: '#21808d',
-    fontWeight: '500',
-  },
-  modalOverlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
-    padding: '20px',
-  },
-  modal: {
+  mapContainer: {
     width: '100%',
-    maxWidth: '500px',
-    backgroundColor: '#ffffff',
-    borderRadius: '16px',
-    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+    height: '100%',
   },
-  modalHeader: {
+  infoPanel: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: '350px',
+    maxWidth: '90%',
+    height: '100%',
+    backgroundColor: '#ffffff',
+    boxShadow: '-4px 0 12px rgba(0, 0, 0, 0.15)',
+    display: 'flex',
+    flexDirection: 'column',
+    animation: 'slideIn 0.3s ease-out',
+    zIndex: 10,
+  },
+  infoPanelHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '24px 24px 16px',
+    padding: '16px 20px',
     borderBottom: '1px solid rgba(94, 82, 64, 0.12)',
+    backgroundColor: '#fcfcf9',
   },
-  modalTitle: {
-    fontSize: '20px',
+  infoPanelTitle: {
+    fontSize: '16px',
     fontWeight: '600',
     color: '#13343b',
+    margin: 0,
   },
   closeButton: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '32px',
-    height: '32px',
+    width: '28px',
+    height: '28px',
     border: 'none',
     backgroundColor: 'rgba(94, 82, 64, 0.08)',
-    borderRadius: '8px',
+    borderRadius: '6px',
     cursor: 'pointer',
     color: '#626c71',
     transition: 'background-color 0.2s ease',
   },
-  modalBody: {
-    padding: '24px',
+  infoPanelBody: {
+    flex: 1,
+    padding: '20px',
+    overflowY: 'auto',
   },
   statusBadge: {
-    marginBottom: '24px',
-  },
-  statusIndicator: {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '8px',
-    padding: '8px 16px',
-    borderRadius: '8px',
-    fontSize: '14px',
+    gap: '6px',
+    padding: '6px 12px',
+    borderRadius: '6px',
+    fontSize: '12px',
     fontWeight: '600',
+    marginBottom: '20px',
   },
-  detailsTable: {
+  detailsList: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '12px',
-    marginBottom: '24px',
+    gap: '16px',
+    marginBottom: '20px',
   },
-  detailRow: {
+  detailItem: {
     display: 'flex',
-    justifyContent: 'space-between',
+    gap: '12px',
     alignItems: 'flex-start',
-    padding: '12px',
-    backgroundColor: 'rgba(94, 82, 64, 0.03)',
-    borderRadius: '6px',
   },
-  detailKey: {
-    fontSize: '14px',
-    fontWeight: '600',
+  detailContent: {
+    flex: 1,
+  },
+  detailLabel: {
+    fontSize: '11px',
     color: '#626c71',
-    minWidth: '100px',
+    marginBottom: '2px',
+    textTransform: 'uppercase',
+    fontWeight: '600',
   },
   detailValue: {
     fontSize: '14px',
     fontWeight: '500',
     color: '#13343b',
-    textAlign: 'right',
-    flex: 1,
+    margin: 0,
   },
   phoneLink: {
     color: '#21808d',
     textDecoration: 'none',
   },
-  actionButtons: {
-    display: 'flex',
-    gap: '12px',
-    flexWrap: 'wrap',
+  actionSection: {
+    marginTop: '20px',
+    paddingTop: '20px',
+    borderTop: '1px solid rgba(94, 82, 64, 0.12)',
   },
-  primaryButton: {
-    flex: 1,
-    minWidth: '150px',
+  actionButton: {
+    width: '100%',
     padding: '12px 16px',
     fontSize: '14px',
     fontWeight: '500',
@@ -881,31 +829,5 @@ const styles = {
     borderRadius: '8px',
     cursor: 'pointer',
     transition: 'background-color 0.2s ease',
-  },
-  successButton: {
-    flex: 1,
-    minWidth: '150px',
-    padding: '12px 16px',
-    fontSize: '14px',
-    fontWeight: '500',
-    color: '#ffffff',
-    backgroundColor: '#16a34a',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s ease',
-  },
-  secondaryButton: {
-    flex: 1,
-    minWidth: '150px',
-    padding: '12px 16px',
-    fontSize: '14px',
-    fontWeight: '500',
-    color: '#21808d',
-    backgroundColor: 'rgba(33, 128, 141, 0.1)',
-    border: '1px solid rgba(33, 128, 141, 0.2)',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
   },
 };
